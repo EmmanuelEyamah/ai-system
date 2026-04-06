@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String   @default("Default User")
+  createdAt DateTime @default(now()) @map("created_at")
+  chats     Chat[]
+
+  @@map("users")
+}
+
+model Chat {
+  id        String            @id @default(cuid())
+  userId    String            @map("user_id")
+  title     String            @default("New Chat")
+  taskType  String?           @map("task_type")
+  status          String            @default("active")
+  starred         Boolean           @default(false)
+  analysisModel   String            @default("claude-sonnet-4.6") @map("analysis_model")
+  generationModel String            @default("claude-sonnet-4.6") @map("generation_model")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  user      User              @relation(fields: [userId], references: [id])
+  messages  Message[]
+  prompts   GeneratedPrompt[]
+
+  @@map("chats")
+}
+
+model Message {
+  id        String            @id @default(cuid())
+  chatId    String            @map("chat_id")
+  role      String
+  content   String            @db.Text
+  metadata  Json?
+  createdAt DateTime          @default(now()) @map("created_at")
+  chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  prompts   GeneratedPrompt[]
+
+  @@map("messages")
+}
+
+model GeneratedPrompt {
+  id          String   @id @default(cuid())
+  chatId      String   @map("chat_id")
+  messageId   String?  @map("message_id")
+  variant     String
+  modelTarget String   @map("model_target")
+  content     String   @db.LongText
+  score       Float?
+  explanation String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  chat        Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  message     Message? @relation(fields: [messageId], references: [id])
+
+  @@map("generated_prompts")
+}

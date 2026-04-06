@@ -1,0 +1,21 @@
+{
+  "name": "ai-system",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=prompt-studio",
+    "build": "npm run build --workspace=prompt-studio",
+    "lint": "npm run lint --workspace=prompt-studio",
+    "db:push": "npm run --workspace=prompt-studio prisma db push",
+    "db:generate": "npm run --workspace=prompt-studio prisma generate",
+    "db:studio": "npm run --workspace=prompt-studio prisma studio"
+  },
+  "packageManager": "npm@11.8.0",
+  "devDependencies": {
+    "turbo": "^2.9.4",
+    "typescript": "^5.8.0"
+  }
+}
