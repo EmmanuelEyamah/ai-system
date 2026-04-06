@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { CopyButton } from "./CopyButton";
 import { TestPromptButton } from "./TestPromptButton";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 interface PromptCardProps {
   variant: string;
@@ -37,16 +40,24 @@ function getVariantAccent(variant: string, modelTarget: string): string {
 }
 
 export function PromptCard({ variant, modelTarget, content, score, explanation, index }: PromptCardProps) {
+  const [expanded, setExpanded] = useState(true);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: [0.25, 0.4, 0.25, 1] }}
-      className={`bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden border-l-2 ${getVariantAccent(variant, modelTarget)}`}
+      className={`bg-white/2 border border-white/5 rounded-xl overflow-hidden border-l-2 ${getVariantAccent(variant, modelTarget)}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/4">
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
           <span className="text-[13px] font-semibold text-zinc-200">
             {getVariantLabel(variant, modelTarget)}
           </span>
@@ -63,17 +74,23 @@ export function PromptCard({ variant, modelTarget, content, score, explanation, 
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <pre className="text-[12px] text-zinc-400 whitespace-pre-wrap font-mono leading-relaxed">
-          {content}
-        </pre>
-      </div>
+      {expanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="p-5 max-h-[500px] overflow-y-auto">
+            <MarkdownRenderer content={content} />
+          </div>
 
-      {/* Explanation */}
-      {explanation && (
-        <div className="px-4 py-2.5 border-t border-white/3 bg-white/[0.01]">
-          <p className="text-[11px] text-zinc-600 leading-relaxed">{explanation}</p>
-        </div>
+          {/* Explanation */}
+          {explanation && (
+            <div className="px-5 py-3 border-t border-white/3 bg-white/1">
+              <p className="text-[11px] text-zinc-600 leading-relaxed italic">{explanation}</p>
+            </div>
+          )}
+        </motion.div>
       )}
     </motion.div>
   );

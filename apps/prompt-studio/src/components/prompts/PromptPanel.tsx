@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PromptCard } from "./PromptCard";
-import { Layers, RefreshCw } from "lucide-react";
+import { Layers, RefreshCw, PanelRightClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Prompt {
@@ -18,6 +18,7 @@ interface Prompt {
 interface PromptPanelProps {
   prompts: Prompt[];
   onRegenerate?: () => void;
+  onClose?: () => void;
   regenerating?: boolean;
 }
 
@@ -30,7 +31,7 @@ const TABS = [
   { key: "claude", label: "Claude" },
 ];
 
-export function PromptPanel({ prompts, onRegenerate, regenerating }: PromptPanelProps) {
+export function PromptPanel({ prompts, onRegenerate, onClose, regenerating }: PromptPanelProps) {
   const [activeTab, setActiveTab] = useState("all");
 
   if (prompts.length === 0) {
@@ -62,6 +63,14 @@ export function PromptPanel({ prompts, onRegenerate, regenerating }: PromptPanel
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-white/4">
         <div className="flex items-center gap-2 mb-3">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-300 transition-smooth"
+            >
+              <PanelRightClose size={15} />
+            </button>
+          )}
           <Layers size={14} className="text-emerald-400" />
           <span className="text-[13px] font-semibold text-zinc-300">Generated Prompts</span>
           <div className="flex items-center gap-2 ml-auto">

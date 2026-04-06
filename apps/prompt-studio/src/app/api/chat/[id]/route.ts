@@ -11,7 +11,10 @@ export async function GET(
   const chat = await db.chat.findUnique({
     where: { id },
     include: {
-      messages: { orderBy: { createdAt: "asc" } },
+      messages: {
+        orderBy: { createdAt: "asc" },
+        include: { attachments: true },
+      },
       prompts: { orderBy: { createdAt: "desc" } },
     },
   });

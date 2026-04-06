@@ -6,9 +6,18 @@ import { MessageBubble } from "./MessageBubble";
 import { LoadingDots } from "@/components/shared/LoadingDots";
 import { Bot, Wand2 } from "lucide-react";
 
+interface AttachmentData {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  url: string;
+}
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
+  attachments?: AttachmentData[];
 }
 
 interface MessageListProps {
@@ -41,7 +50,7 @@ export function MessageList({ messages, loading }: MessageListProps) {
           <div>
             <h3 className="text-base font-semibold text-zinc-300 mb-1">What are you building?</h3>
             <p className="text-sm text-zinc-600 max-w-xs">
-              Paste your idea, and I&apos;ll craft the perfect prompts for it.
+              Paste your idea, attach files for context, and I&apos;ll craft the perfect prompts.
             </p>
           </div>
         </motion.div>
@@ -50,10 +59,16 @@ export function MessageList({ messages, loading }: MessageListProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-6">
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6">
       <div className="max-w-3xl mx-auto py-6 space-y-5">
         {messages.map((msg, i) => (
-          <MessageBubble key={i} role={msg.role} content={msg.content} index={i} />
+          <MessageBubble
+            key={i}
+            role={msg.role}
+            content={msg.content}
+            index={i}
+            attachments={msg.attachments}
+          />
         ))}
         {loading && (
           <motion.div

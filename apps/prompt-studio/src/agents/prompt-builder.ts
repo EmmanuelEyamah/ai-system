@@ -3,25 +3,47 @@ import { PROMPT_BUILDER_SYSTEM_PROMPT, buildPromptBuilderPrompt } from "./prompt
 import { resolveModel } from "./model-resolver";
 import type { PromptOutput } from "./types";
 
-const JSON_INSTRUCTION = `
+const FORMAT_INSTRUCTION = `
 
-CRITICAL FORMATTING RULES:
-1. Your entire response must be a raw JSON object
-2. Do NOT wrap the JSON in quotes
-3. Do NOT use markdown code fences
-4. Do NOT escape quotes inside the JSON — use standard JSON formatting
-5. Start your response with { and end with }
+OUTPUT FORMAT — FOLLOW EXACTLY:
+Respond with 5 prompt variants separated by the delimiter ===PROMPT=== on its own line.
 
-The JSON structure:
-{
-  "prompts": [
-    {"variant": "best", "modelTarget": "universal", "content": "prompt text", "explanation": "why"},
-    {"variant": "shorter", "modelTarget": "universal", "content": "prompt text", "explanation": "why"},
-    {"variant": "advanced", "modelTarget": "universal", "content": "prompt text", "explanation": "why"},
-    {"variant": "best", "modelTarget": "openai", "content": "prompt text", "explanation": "why"},
-    {"variant": "best", "modelTarget": "claude", "content": "prompt text", "explanation": "why"}
-  ]
-}`;
+For each prompt, use this header format on the first line:
+[variant] [target]
+
+Where variant is: best, shorter, or advanced
+Where target is: universal, openai, or claude
+
+Then the prompt text follows. Then ===EXPLANATION=== on its own line, followed by a one-line explanation.
+
+Example structure:
+
+best universal
+(prompt text here)
+===EXPLANATION===
+(one line explanation)
+===PROMPT===
+shorter universal
+(prompt text here)
+===EXPLANATION===
+(one line explanation)
+===PROMPT===
+advanced universal
+(prompt text here)
+===EXPLANATION===
+(one line explanation)
+===PROMPT===
+best openai
+(prompt text here)
+===EXPLANATION===
+(one line explanation)
+===PROMPT===
+best claude
+(prompt text here)
+===EXPLANATION===
+(one line explanation)
+
+Generate all 5 variants. Each prompt must be genuinely different and optimized for its target.`;
 
 export async function buildPrompts(
   userInput: string,
@@ -35,159 +57,62 @@ export async function buildPrompts(
 
   const { text } = await generateText({
     model,
-    system: PROMPT_BUILDER_SYSTEM_PROMPT + JSON_INSTRUCTION,
+    system: PROMPT_BUILDER_SYSTEM_PROMPT + FORMAT_INSTRUCTION,
     prompt,
   });
 
-  console.log("[PromptBuilder] Raw length:", text.length);
-  console.log("[PromptBuilder] Starts with:", text.charAt(0), "charCode:", text.charCodeAt(0));
+  const prompts = parseDelimitedResponse(text);
+  console.log("[PromptBuilder] Parsed", prompts.length, "variants");
 
-  const parsed = extractJSON(text);
-  console.log("[PromptBuilder] Parsed count:", parsed?.prompts?.length || 0);
+  if (prompts.length > 0) return prompts;
 
-  if (parsed?.prompts && Array.isArray(parsed.prompts) && parsed.prompts.length > 0) {
-    const normalized = normalizePrompts(parsed.prompts);
-    console.log("[PromptBuilder] Normalized count:", normalized.length);
-    return normalized;
-  }
-
+  // Fallback: return as single prompt
   return [{
-    variant: "best" as const,
-    modelTarget: "universal" as const,
-    content: text,
-    explanation: "Generated as a single prompt.",
+    variant: "best",
+    modelTarget: "universal",
+    content: text.trim(),
+    explanation: "Universal prompt variant.",
   }];
 }
 
-function normalizePrompts(prompts: { variant?: string; modelTarget?: string; content?: string; explanation?: string }[]): PromptOutput[] {
+function parseDelimitedResponse(text: string): PromptOutput[] {
   const validVariants = ["best", "shorter", "advanced"];
   const validTargets = ["universal", "openai", "claude"];
+  const prompts: PromptOutput[] = [];
 
-  return prompts
-    .filter((p) => p.content && p.content.length > 10)
-    .map((p) => ({
-      variant: (validVariants.includes(p.variant || "") ? p.variant : "best") as PromptOutput["variant"],
-      modelTarget: (validTargets.includes(p.modelTarget || "") ? p.modelTarget : "universal") as PromptOutput["modelTarget"],
-      content: p.content || "",
-      explanation: p.explanation || "",
-    }));
-}
+  // Split by the delimiter
+  const blocks = text.split("===PROMPT===").map((b) => b.trim()).filter(Boolean);
 
-function extractJSON(raw: string): { prompts: { variant: string; modelTarget: string; content: string; explanation: string }[] } | null {
-  let text = raw.trim();
+  for (const block of blocks) {
+    const explanationSplit = block.split("===EXPLANATION===");
+    const mainPart = explanationSplit[0].trim();
+    const explanation = explanationSplit[1]?.trim() || "";
 
-  // Layer 1: If the entire string is a JSON-encoded string (starts with " or \"), unwrap it
-  // This handles the AI SDK sometimes returning text as a JSON string literal
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (text.startsWith('"') || text.startsWith("'")) {
-      try {
-        text = JSON.parse(text);
-        if (typeof text !== "string") {
-          // We got an object directly
-          if (text && typeof text === "object" && "prompts" in (text as object)) {
-            return text as { prompts: { variant: string; modelTarget: string; content: string; explanation: string }[] };
-          }
-        }
-        text = (text as string).trim();
-      } catch {
-        // Manual unwrap
-        text = text.slice(1, -1);
-        text = text.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
-        text = text.trim();
-      }
-    } else {
-      break;
+    // First line should be "variant target"
+    const lines = mainPart.split("\n");
+    const headerLine = lines[0].trim().toLowerCase();
+    const content = lines.slice(1).join("\n").trim();
+
+    if (!content || content.length < 20) continue;
+
+    // Parse header
+    let variant = "best";
+    let modelTarget = "universal";
+
+    for (const v of validVariants) {
+      if (headerLine.includes(v)) { variant = v; break; }
     }
-  }
-
-  // Layer 2: Remove markdown code fences
-  text = text.replace(/^```(?:json)?\s*\n?/gm, "").replace(/\n?\s*```\s*$/gm, "").trim();
-
-  // Layer 3: Manual unescape if still has escaped quotes
-  if (text.includes('\\"')) {
-    const unescaped = text.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-    try {
-      const result = JSON.parse(unescaped);
-      if (result.prompts) return result;
-    } catch {
-      // continue with original
+    for (const t of validTargets) {
+      if (headerLine.includes(t)) { modelTarget = t; break; }
     }
+
+    prompts.push({
+      variant: variant as PromptOutput["variant"],
+      modelTarget: modelTarget as PromptOutput["modelTarget"],
+      content,
+      explanation,
+    });
   }
 
-  // Layer 4: Direct parse
-  try {
-    const result = JSON.parse(text);
-    if (result.prompts) return result;
-  } catch {
-    // continue
-  }
-
-  // Layer 5: Find the JSON object by brace matching
-  const startPatterns = ['{"prompts"', '{ "prompts"', '{\n  "prompts"', '{\n"prompts"'];
-  for (const pattern of startPatterns) {
-    const idx = text.indexOf(pattern);
-    if (idx !== -1) {
-      const matched = braceMatch(text, idx);
-      if (matched) return matched;
-    }
-  }
-
-  // Layer 6: Extract "prompts" array directly
-  const arrayIdx = text.indexOf('"prompts"');
-  if (arrayIdx !== -1) {
-    const bracketIdx = text.indexOf("[", arrayIdx);
-    if (bracketIdx !== -1) {
-      const arr = bracketMatch(text, bracketIdx);
-      if (arr) {
-        try {
-          const parsed = JSON.parse(arr);
-          if (Array.isArray(parsed)) return { prompts: parsed };
-        } catch {
-          // continue
-        }
-      }
-    }
-  }
-
-  console.log("[PromptBuilder] All extraction attempts failed");
-  console.log("[PromptBuilder] Text starts with:", JSON.stringify(text.substring(0, 80)));
-  return null;
-}
-
-function braceMatch(text: string, startIdx: number): { prompts: { variant: string; modelTarget: string; content: string; explanation: string }[] } | null {
-  let depth = 0;
-  for (let i = startIdx; i < text.length; i++) {
-    if (text[i] === "{") depth++;
-    if (text[i] === "}") depth--;
-    if (depth === 0) {
-      const substr = text.substring(startIdx, i + 1);
-      try {
-        const result = JSON.parse(substr);
-        if (result.prompts) return result;
-      } catch {
-        // Try unescaping
-        try {
-          const unescaped = substr.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-          const result = JSON.parse(unescaped);
-          if (result.prompts) return result;
-        } catch {
-          // give up on this match
-        }
-      }
-      break;
-    }
-  }
-  return null;
-}
-
-function bracketMatch(text: string, startIdx: number): string | null {
-  let depth = 0;
-  for (let i = startIdx; i < text.length; i++) {
-    if (text[i] === "[") depth++;
-    if (text[i] === "]") depth--;
-    if (depth === 0) {
-      return text.substring(startIdx, i + 1);
-    }
-  }
-  return null;
+  return prompts;
 }

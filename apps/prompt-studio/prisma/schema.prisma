@@ -43,8 +43,25 @@ model Message {
   createdAt DateTime          @default(now()) @map("created_at")
   chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
   prompts   GeneratedPrompt[]
+  attachments Attachment[]
 
   @@map("messages")
+}
+
+model Attachment {
+  id           String   @id @default(cuid())
+  messageId    String?  @map("message_id")
+  chatId       String   @map("chat_id")
+  fileName     String   @map("file_name")
+  fileType     String   @map("file_type")
+  mimeType     String   @map("mime_type")
+  fileSize     Int      @map("file_size")
+  storagePath  String   @map("storage_path")
+  extractedText String?  @db.LongText @map("extracted_text")
+  createdAt    DateTime @default(now()) @map("created_at")
+  message      Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
 }
 
 model GeneratedPrompt {

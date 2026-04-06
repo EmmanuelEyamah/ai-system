@@ -2,12 +2,22 @@
 
 import { useState, useCallback, useRef } from "react";
 import { DEFAULT_MODEL_SELECTION, type ModelSelection } from "@/lib/models";
+import type { PendingFile } from "@/components/chat/ChatInput";
+
+interface AttachmentData {
+  id: string;
+  fileName: string;
+  fileType: string;
+  mimeType: string;
+  url: string;
+}
 
 interface Message {
   id?: string;
   role: "user" | "assistant" | "system";
   content: string;
   metadata?: Record<string, unknown>;
+  attachments?: AttachmentData[];
 }
 
 interface Prompt {
@@ -47,16 +57,22 @@ export function useChat(chatId: string) {
       if (res.ok) {
         const data = await res.json();
 
-        // Check if the last assistant message has showConfirmButtons
         const lastMsg = data.messages?.[data.messages.length - 1];
         const showButtons = lastMsg?.metadata?.showConfirmButtons === true;
 
         setState((prev) => ({
           ...prev,
-          messages: (data.messages || []).map((m: Message) => ({
+          messages: (data.messages || []).map((m: Message & { attachments?: AttachmentData[] }) => ({
             role: m.role,
             content: m.content,
             metadata: m.metadata,
+            attachments: m.attachments?.map((a: AttachmentData & { storagePath?: string }) => ({
+              id: a.id,
+              fileName: a.fileName,
+              fileType: a.fileType,
+              mimeType: a.mimeType,
+              url: a.url || `/api/upload/file/${chatId}/${a.fileName}`,
+            })),
           })),
           prompts: data.prompts || [],
           models: {
@@ -83,10 +99,44 @@ export function useChat(chatId: string) {
     }
   }, [chatId]);
 
-  const sendMessage = async (message: string) => {
-    lastMessageRef.current = message;
+  const uploadFiles = async (files: PendingFile[]): Promise<AttachmentData[]> => {
+    const uploaded: AttachmentData[] = [];
 
+    for (const f of files) {
+      const formData = new FormData();
+      formData.append("file", f.file);
+      formData.append("chatId", chatId);
+
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          uploaded.push({
+            id: data.id,
+            fileName: data.fileName,
+            fileType: data.fileType,
+            mimeType: data.mimeType,
+            url: data.url,
+          });
+        }
+      } catch {
+        console.error("File upload failed:", f.file.name);
+      }
+    }
+
+    return uploaded;
+  };
+
+  const sendMessage = async (message: string, files?: PendingFile[]) => {
+    lastMessageRef.current = message;
     const isGenerate = message === "__GENERATE_PROMPTS__";
+
+    // Upload files first if any
+    let uploadedFiles: AttachmentData[] = [];
+    if (files && files.length > 0) {
+      setState((prev) => ({ ...prev, sending: true, error: null }));
+      uploadedFiles = await uploadFiles(files);
+    }
 
     setState((prev) => ({
       ...prev,
@@ -95,14 +145,21 @@ export function useChat(chatId: string) {
       showConfirmButtons: false,
       messages: isGenerate
         ? prev.messages
-        : [...prev.messages, { role: "user", content: message }],
+        : [...prev.messages, {
+            role: "user",
+            content: message,
+            attachments: uploadedFiles.length > 0 ? uploadedFiles : undefined,
+          }],
     }));
 
     try {
       const res = await fetch(`/api/chat/${chatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          message,
+          attachmentIds: uploadedFiles.map((f) => f.id),
+        }),
       });
 
       if (!res.ok) {
