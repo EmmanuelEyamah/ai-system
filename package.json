@@ -18,7 +18,9 @@
   "packageManager": "npm@11.8.0",
   "optionalDependencies": {
     "lightningcss-linux-x64-gnu": "^1.32.0",
-    "lightningcss-linux-x64-musl": "^1.32.0"
+    "lightningcss-linux-x64-musl": "^1.32.0",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.2.2",
+    "@tailwindcss/oxide-linux-x64-musl": "4.2.2"
   },
   "devDependencies": {
     "turbo": "^2.9.4",
