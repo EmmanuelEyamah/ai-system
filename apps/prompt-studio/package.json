@@ -14,10 +14,11 @@
     "react-dom": "19.2.4",
     "@ai-system/shared-types": "*",
     "@ai-system/ai-clients": "*",
+    "@ai-system/database": "*",
+    "@ai-system/shared-ui": "*",
     "ai": "^4",
     "@ai-sdk/openai": "^1",
     "@ai-sdk/anthropic": "^1",
-    "@prisma/client": "^6",
     "zod": "^3",
     "lucide-react": "^0.500",
     "framer-motion": "^12",
@@ -38,7 +39,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "prisma": "^6"
+    "typescript": "^5"
   }
 }

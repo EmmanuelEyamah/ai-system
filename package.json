@@ -6,12 +6,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=prompt-studio",
-    "build": "npm run build --workspace=prompt-studio",
-    "lint": "npm run lint --workspace=prompt-studio",
-    "db:push": "npm run --workspace=prompt-studio prisma db push",
-    "db:generate": "npm run --workspace=prompt-studio prisma generate",
-    "db:studio": "npm run --workspace=prompt-studio prisma studio"
+    "dev": "turbo run dev",
+    "dev:ps": "npm run dev --workspace=prompt-studio",
+    "dev:rh": "npm run dev --workspace=research-hub",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:push": "npm run db:push --workspace=@ai-system/database",
+    "db:generate": "npm run db:generate --workspace=@ai-system/database",
+    "db:studio": "npm run db:studio --workspace=@ai-system/database"
   },
   "packageManager": "npm@11.8.0",
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@ai-system/database";
 
 // GET /api/prompts/[chatId] — get all prompts for a chat
 export async function GET(

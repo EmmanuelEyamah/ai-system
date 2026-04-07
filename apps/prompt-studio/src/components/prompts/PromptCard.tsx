@@ -26,7 +26,8 @@ function getVariantLabel(variant: string, modelTarget: string): string {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 8) return "text-emerald-400 bg-emerald-500/10 border-emerald-500/15";
+  if (score >= 8)
+    return "text-emerald-400 bg-emerald-500/10 border-emerald-500/15";
   if (score >= 6) return "text-amber-400 bg-amber-500/10 border-amber-500/15";
   return "text-red-400 bg-red-500/10 border-red-500/15";
 }
@@ -39,14 +40,25 @@ function getVariantAccent(variant: string, modelTarget: string): string {
   return "border-l-zinc-500/40";
 }
 
-export function PromptCard({ variant, modelTarget, content, score, explanation, index }: PromptCardProps) {
+export function PromptCard({
+  variant,
+  modelTarget,
+  content,
+  score,
+  explanation,
+  index,
+}: PromptCardProps) {
   const [expanded, setExpanded] = useState(true);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.08, ease: [0.25, 0.4, 0.25, 1] }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.08,
+        ease: [0.25, 0.4, 0.25, 1],
+      }}
       className={`bg-white/2 border border-white/5 rounded-xl overflow-hidden border-l-2 ${getVariantAccent(variant, modelTarget)}`}
     >
       {/* Header */}
@@ -62,13 +74,18 @@ export function PromptCard({ variant, modelTarget, content, score, explanation, 
             {getVariantLabel(variant, modelTarget)}
           </span>
           {score && (
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getScoreColor(score)}`}>
+            <span
+              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getScoreColor(score)}`}
+            >
               {score.toFixed(1)}
             </span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <TestPromptButton prompt={content} model={modelTarget === "openai" ? "openai" : "claude"} />
+          <TestPromptButton
+            prompt={content}
+            model={modelTarget === "openai" ? "openai" : "claude"}
+          />
           <CopyButton text={content} />
         </div>
       </div>
@@ -80,14 +97,16 @@ export function PromptCard({ variant, modelTarget, content, score, explanation, 
           animate={{ height: "auto", opacity: 1 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="p-5 max-h-[500px] overflow-y-auto">
+          <div className="p-5 max-h-125 overflow-y-auto">
             <MarkdownRenderer content={content} />
           </div>
 
           {/* Explanation */}
           {explanation && (
             <div className="px-5 py-3 border-t border-white/3 bg-white/1">
-              <p className="text-[11px] text-zinc-600 leading-relaxed italic">{explanation}</p>
+              <p className="text-[11px] text-zinc-600 leading-relaxed italic">
+                {explanation}
+              </p>
             </div>
           )}
         </motion.div>

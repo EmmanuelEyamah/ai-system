@@ -11,7 +11,8 @@ model User {
   id        String   @id @default(cuid())
   name      String   @default("Default User")
   createdAt DateTime @default(now()) @map("created_at")
-  chats     Chat[]
+  chats              Chat[]
+  researchSessions   ResearchSession[]
 
   @@map("users")
 }
@@ -78,4 +79,52 @@ model GeneratedPrompt {
   message     Message? @relation(fields: [messageId], references: [id])
 
   @@map("generated_prompts")
+}
+
+model ResearchSession {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  title      String    @default("New Research")
+  query      String    @db.Text
+  status        String    @default("pending")
+  starred       Boolean   @default(false)
+  researchModel String    @default("claude-sonnet-4.6") @map("research_model")
+  reportData    Json?     @map("report_data")
+  toolsUsed  Json?     @map("tools_used")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  user       User      @relation(fields: [userId], references: [id])
+  messages   ResearchMessage[]
+  tasks      CrossAppTask[]    @relation("ResearchTasks")
+
+  @@map("research_sessions")
+}
+
+model ResearchMessage {
+  id        String          @id @default(cuid())
+  sessionId String          @map("session_id")
+  role      String
+  content   String          @db.LongText
+  metadata  Json?
+  createdAt DateTime        @default(now()) @map("created_at")
+  session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("research_messages")
+}
+
+model CrossAppTask {
+  id              String           @id @default(cuid())
+  sourceApp       String           @map("source_app")
+  targetApp       String           @map("target_app")
+  taskType        String           @map("task_type")
+  status          String           @default("pending")
+  payload         Json
+  result          Json?
+  sourceRefId     String?          @map("source_ref_id")
+  targetRefId     String?          @map("target_ref_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  completedAt     DateTime?        @map("completed_at")
+  researchSession ResearchSession? @relation("ResearchTasks", fields: [sourceRefId], references: [id])
+
+  @@map("cross_app_tasks")
 }

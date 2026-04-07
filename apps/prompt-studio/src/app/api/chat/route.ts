@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@ai-system/database";
 import { DEFAULT_ANALYSIS_MODEL, DEFAULT_GENERATION_MODEL } from "@/lib/models";
 
 // GET /api/chat — list all chats

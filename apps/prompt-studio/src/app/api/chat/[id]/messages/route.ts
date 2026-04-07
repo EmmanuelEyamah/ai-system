@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@ai-system/database";
 import { orchestrate } from "@/agents/orchestrator";
 import { readFile } from "fs/promises";
 import { fetchAllUrls } from "@/lib/url-fetcher";

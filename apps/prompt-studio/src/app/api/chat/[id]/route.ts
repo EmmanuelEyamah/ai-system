@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@ai-system/database";
 
 // GET /api/chat/[id] — get single chat with messages and prompts
 export async function GET(

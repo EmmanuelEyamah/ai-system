@@ -97,7 +97,9 @@ export function TestPromptButton({ prompt, model }: TestPromptButtonProps) {
                   <span className="text-[13px] font-medium text-zinc-300">
                     {model === "openai" ? "GPT-4o" : "Claude"} Output
                   </span>
-                  {testing && <Loader2 size={13} className="animate-spin text-zinc-500" />}
+                  {testing && (
+                    <Loader2 size={13} className="animate-spin text-zinc-500" />
+                  )}
                 </div>
                 <button
                   onClick={() => setOpen(false)}
@@ -108,7 +110,7 @@ export function TestPromptButton({ prompt, model }: TestPromptButtonProps) {
               </div>
 
               {/* Output */}
-              <div className="p-5 max-h-[400px] overflow-y-auto">
+              <div className="p-5 max-h-100 overflow-y-auto">
                 {output ? (
                   <pre className="text-[13px] text-zinc-400 whitespace-pre-wrap font-mono leading-relaxed">
                     {output}
