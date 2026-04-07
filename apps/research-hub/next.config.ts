@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, "../.."),
   },
+  transpilePackages: [
+    "@ai-system/shared-types",
+    "@ai-system/ai-clients",
+    "@ai-system/database",
+    "@ai-system/shared-ui",
+  ],
 };
 
 export default nextConfig;
