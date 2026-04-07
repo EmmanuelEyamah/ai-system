@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, Loader2, User, Bot } from "lucide-react";
+import { Send, Loader2, User, Bot, Link2, X } from "lucide-react";
 import { MarkdownRenderer, LoadingDots } from "@ai-system/shared-ui";
+import { ReferenceButton } from "@/components/shared/ReferenceButton";
 
 interface ChatMessage {
   id: string;
@@ -22,6 +23,7 @@ export function FollowUpChat({
   onSendMessage: (message: string) => void;
 }) {
   const [input, setInput] = useState("");
+  const [reference, setReference] = useState<{ title: string; context: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,7 +35,9 @@ export function FollowUpChat({
 
   const handleSubmit = () => {
     if (!input.trim() || sending) return;
-    onSendMessage(input.trim());
+    const msg = reference ? `${reference.context}\n\n${input.trim()}` : input.trim();
+    setReference(null);
+    onSendMessage(msg);
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -90,7 +94,17 @@ export function FollowUpChat({
 
       {/* Input */}
       <div className="bg-white/2 border border-white/5 rounded-xl p-1.5">
+        {reference && (
+          <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
+              <Link2 size={10} />
+              <span className="truncate max-w-48">{reference.title}</span>
+              <button onClick={() => setReference(null)} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
+            </div>
+          </div>
+        )}
         <div className="flex items-end gap-2">
+          <ReferenceButton onReference={(context, title) => setReference({ title, context })} />
           <textarea
             ref={textareaRef}
             value={input}

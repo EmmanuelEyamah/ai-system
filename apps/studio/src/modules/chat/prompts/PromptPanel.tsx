@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PromptCard } from "./PromptCard";
-import { Layers, RefreshCw, PanelRightClose } from "lucide-react";
+import { Layers, RefreshCw, PanelRightClose, Search, Loader2 } from "lucide-react";
 import { cn } from "@ai-system/shared-ui";
 
 interface Prompt {
@@ -32,7 +33,32 @@ const TABS = [
 ];
 
 export function PromptPanel({ prompts, onRegenerate, onClose, regenerating }: PromptPanelProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
+  const [researchLoading, setResearchLoading] = useState(false);
+
+  const handleResearchThis = async () => {
+    // Use the best prompt's content as the research query
+    const bestPrompt = prompts.find((p) => p.variant === "best") || prompts[0];
+    if (!bestPrompt) return;
+
+    setResearchLoading(true);
+    try {
+      const res = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: bestPrompt.content.slice(0, 200) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/research/${data.sessionId}`);
+      }
+    } catch {
+      // silent
+    } finally {
+      setResearchLoading(false);
+    }
+  };
 
   if (prompts.length === 0) {
     return (
@@ -127,6 +153,24 @@ export function PromptPanel({ prompts, onRegenerate, onClose, regenerating }: Pr
             index={i}
           />
         ))}
+      </div>
+
+      {/* Research this prompt */}
+      <div className="px-4 py-3 border-t border-white/4 shrink-0">
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleResearchThis}
+          disabled={researchLoading}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500/8 border border-cyan-500/10 text-cyan-400 text-[12px] font-medium hover:bg-cyan-500/15 hover:border-cyan-500/20 disabled:opacity-50 transition-smooth"
+        >
+          {researchLoading ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Search size={13} />
+          )}
+          Research this with Research Hub
+        </motion.button>
       </div>
     </div>
   );

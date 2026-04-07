@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, RotateCcw, Paperclip, X, FileText, Image as ImageIcon, File } from "lucide-react";
+import { ArrowUp, RotateCcw, Paperclip, X, FileText, Image as ImageIcon, File, Link2 } from "lucide-react";
 import { cn } from "@ai-system/shared-ui";
+import { ReferenceButton } from "@/components/shared/ReferenceButton";
 
 export interface PendingFile {
   file: File;
@@ -62,6 +63,7 @@ function FilePreview({ file, onRemove }: { file: PendingFile; onRemove: () => vo
 export function ChatInput({ onSend, onRetry, disabled, placeholder, showRetry }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<PendingFile[]>([]);
+  const [reference, setReference] = useState<{ title: string; context: string } | null>(null);
   const [dragging, setDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,7 +102,9 @@ export function ChatInput({ onSend, onRetry, disabled, placeholder, showRetry }:
   const handleSubmit = () => {
     const trimmed = input.trim();
     if ((!trimmed && files.length === 0) || disabled) return;
-    onSend(trimmed, files.length > 0 ? files : undefined);
+    const msg = reference ? `${reference.context}\n\n${trimmed}` : trimmed;
+    setReference(null);
+    onSend(msg, files.length > 0 ? files : undefined);
     setInput("");
     setFiles([]);
   };
@@ -155,6 +159,17 @@ export function ChatInput({ onSend, onRetry, disabled, placeholder, showRetry }:
           </motion.div>
         )}
 
+        {/* Reference tag */}
+        {reference && (
+          <div className="flex items-center gap-2 px-3 pt-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
+              <Link2 size={10} />
+              <span className="truncate max-w-48">{reference.title}</span>
+              <button onClick={() => setReference(null)} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
+            </div>
+          </div>
+        )}
+
         {/* File previews */}
         <AnimatePresence>
           {files.length > 0 && (
@@ -181,7 +196,8 @@ export function ChatInput({ onSend, onRetry, disabled, placeholder, showRetry }:
           )}
         >
           {/* Attach button */}
-          <div className="pl-2 pb-2.5">
+          <div className="pl-2 pb-2.5 flex items-center gap-0.5">
+            <ReferenceButton onReference={(context, title) => setReference({ title, context })} />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
