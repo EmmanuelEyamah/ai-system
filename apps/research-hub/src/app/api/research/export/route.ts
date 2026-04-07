@@ -27,11 +27,11 @@ export async function POST(request: Request) {
       : report.sections;
 
     const sectionsHtml = await Promise.all(
-      sections.map(async (s) => {
+      sections.sort((a, b) => a.order - b.order).map(async (s) => {
         const contentHtml = await marked.parse(s.content);
         const sourcesHtml = s.sources?.length
           ? `<div class="sources"><h4>Sources</h4><ul>${s.sources
-              .map((src) => `<li><a href="${src.url}">${src.title}</a></li>`)
+              .map((src) => `<li><a href="${src.url}">${src.title || src.url}</a></li>`)
               .join("")}</ul></div>`
           : "";
         return `<section><h2>${s.title}</h2>${contentHtml}${sourcesHtml}</section>`;
@@ -40,56 +40,128 @@ export async function POST(request: Request) {
 
     const summaryHtml = await marked.parse(report.summary || "");
 
+    const tocHtml = sections
+      .sort((a, b) => a.order - b.order)
+      .map((s, i) => `<li><span class="toc-num">${i + 1}.</span> ${s.title}</li>`)
+      .join("");
+
     const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>${report.query} — Research Report</title>
   <style>
+    @page {
+      margin: 0.75in;
+      size: A4;
+      @bottom-center {
+        content: counter(page);
+        font-size: 10px;
+        color: #94a3b8;
+      }
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; line-height: 1.6; padding: 40px; max-width: 900px; margin: 0 auto; }
-    h1 { font-size: 28px; margin-bottom: 8px; color: #0a0a0f; }
-    h2 { font-size: 20px; margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #06b6d4; color: #0a0a0f; }
-    h3 { font-size: 16px; margin: 20px 0 8px; color: #1a1a2e; }
-    h4 { font-size: 14px; margin: 16px 0 6px; color: #444; }
-    p { margin-bottom: 12px; font-size: 14px; }
-    ul, ol { margin-bottom: 12px; padding-left: 24px; }
-    li { margin-bottom: 4px; font-size: 14px; }
-    code { background: #f0f9ff; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-    pre { background: #f8fafc; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; }
-    pre code { background: none; padding: 0; }
-    a { color: #06b6d4; text-decoration: none; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      color: #1e293b;
+      line-height: 1.7;
+      padding: 48px;
+      max-width: 860px;
+      margin: 0 auto;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Header */
+    .cover { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 3px solid #0891b2; }
+    .cover h1 { font-size: 26px; color: #0f172a; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
+    .cover .meta { font-size: 11px; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
+    .cover .brand { display: inline-block; background: #0891b2; color: white; font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 4px; margin-right: 8px; letter-spacing: 0.5px; }
+
+    /* TOC */
+    .toc { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; page-break-after: auto; }
+    .toc h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 12px; }
+    .toc ul { list-style: none; padding: 0; }
+    .toc li { font-size: 13px; color: #334155; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+    .toc li:last-child { border-bottom: none; }
+    .toc .toc-num { color: #0891b2; font-weight: 600; margin-right: 8px; }
+
+    /* Summary */
+    .summary { background: linear-gradient(135deg, #f0fdfa, #ecfeff); border: 1px solid #99f6e4; border-radius: 8px; padding: 24px; margin-bottom: 36px; }
+    .summary h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; color: #0891b2; margin-bottom: 12px; font-weight: 700; }
+    .summary p { font-size: 14px; color: #1e293b; line-height: 1.7; }
+
+    /* Sections */
+    section { margin-bottom: 28px; page-break-inside: avoid; }
+    h2 { font-size: 18px; color: #0f172a; margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; font-weight: 700; }
+    h3 { font-size: 15px; color: #1e293b; margin: 16px 0 8px; font-weight: 600; }
+    h4 { font-size: 13px; color: #475569; margin: 12px 0 6px; font-weight: 600; }
+    p { margin-bottom: 10px; font-size: 13.5px; color: #334155; }
+    ul, ol { margin-bottom: 10px; padding-left: 20px; }
+    li { margin-bottom: 4px; font-size: 13.5px; color: #334155; }
+    strong { color: #0f172a; }
+    em { color: #475569; }
+    a { color: #0891b2; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .header { margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
-    .meta { font-size: 12px; color: #71717a; margin-top: 4px; }
-    .summary { background: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 32px; border-left: 4px solid #06b6d4; }
-    .sources { margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 6px; }
-    .sources h4 { margin-top: 0; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Code */
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 12px; color: #0891b2; }
+    pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: 6px; overflow-x: auto; margin: 10px 0; }
+    pre code { background: none; padding: 0; color: #334155; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    th { background: #f8fafc; padding: 8px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #475569; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+    td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    tr:hover td { background: #f8fafc; }
+
+    /* Sources */
+    .sources { margin-top: 16px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .sources h4 { margin-top: 0; color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
     .sources ul { list-style: none; padding: 0; }
-    .sources li { font-size: 13px; margin-bottom: 4px; }
-    section { margin-bottom: 24px; }
-    strong { color: #0a0a0f; }
-    @media print { body { padding: 20px; } }
+    .sources li { font-size: 12px; margin-bottom: 3px; }
+    .sources li a { color: #0891b2; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8; }
+
+    /* Print button (hidden in PDF) */
+    .print-btn { position: fixed; bottom: 24px; right: 24px; background: #0891b2; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(8,145,178,0.3); z-index: 100; }
+    .print-btn:hover { background: #0e7490; }
+    @media print { .print-btn { display: none; } }
   </style>
 </head>
 <body>
-  <div class="header">
+  <button class="print-btn" onclick="window.print()">Save as PDF</button>
+
+  <div class="cover">
+    <span class="brand">RESEARCH REPORT</span>
     <h1>${report.query}</h1>
-    <div class="meta">Research Report &middot; Generated ${new Date(report.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
+    <div class="meta">Generated ${new Date(report.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} &middot; Powered by Research Hub</div>
   </div>
+
+  <div class="toc">
+    <h3>Table of Contents</h3>
+    <ul>${tocHtml}</ul>
+  </div>
+
   <div class="summary">
     <h3>Executive Summary</h3>
     ${summaryHtml}
   </div>
+
   ${sectionsHtml.join("\n")}
+
+  <div class="footer">
+    This report was generated using AI-powered research tools. All sources are cited inline.<br>
+    Research Hub &middot; ${new Date().getFullYear()}
+  </div>
 </body>
 </html>`;
 
-    // Return HTML — the client can use window.print() or a dedicated PDF lib
     return new Response(html, {
       headers: {
-        "Content-Type": "text/html",
-        "Content-Disposition": `attachment; filename="research-${sessionId}.html"`,
+        "Content-Type": "text/html; charset=utf-8",
       },
     });
   } catch (error) {

@@ -51,13 +51,12 @@ export function ExportModal({
       });
 
       if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `research-${sessionId}.html`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const html = await res.text();
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+        }
         onClose();
       }
     } catch {

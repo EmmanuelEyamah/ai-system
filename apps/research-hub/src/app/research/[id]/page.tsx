@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Star, AlertCircle, Search } from "lucide-react";
+import { Loader2, Star, AlertCircle, Search, RefreshCw } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AgentActivityFeed } from "@/components/research/AgentActivityFeed";
 import { ReportRenderer } from "@/components/research/ReportRenderer";
@@ -126,15 +126,28 @@ export default function ResearchPage({
               <p className="text-[15px] text-zinc-300 leading-relaxed">{query}</p>
             </div>
 
-            {/* Error */}
+            {/* Error with retry */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/15 mb-6"
+                className="flex items-center justify-between px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/15 mb-6"
               >
-                <AlertCircle size={15} className="text-red-400 shrink-0" />
-                <p className="text-[13px] text-red-400">{error}</p>
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={15} className="text-red-400 shrink-0" />
+                  <p className="text-[13px] text-red-400">{error}</p>
+                </div>
+                {(status === "failed" || !report) && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => startResearch()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-cyan-500/10 border border-cyan-500/15 text-[12px] text-cyan-400 hover:bg-cyan-500/20 transition-smooth shrink-0 ml-3"
+                  >
+                    <RefreshCw size={12} />
+                    Retry
+                  </motion.button>
+                )}
               </motion.div>
             )}
 

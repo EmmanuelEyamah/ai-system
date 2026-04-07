@@ -35,18 +35,30 @@ export async function POST(
           data: { status: "researching" },
         });
 
-        const report = await orchestrateResearch({
+        // Load previously saved tool data (for retry/resume)
+        const savedToolData = session.toolsUsed as { results: unknown[]; completedAt: string } | null;
+
+        const { report, toolData } = await orchestrateResearch({
           query: session.query,
           sessionId: id,
           modelId: session.researchModel,
+          savedToolData: savedToolData as never,
           emitEvent,
+          saveToolResults: async (data) => {
+            await db.researchSession.update({
+              where: { id },
+              data: { toolsUsed: JSON.parse(JSON.stringify(data)) },
+            });
+          },
         });
 
+        // Save both tool results and report
         await db.researchSession.update({
           where: { id },
           data: {
             status: "completed",
             reportData: JSON.parse(JSON.stringify(report)),
+            toolsUsed: JSON.parse(JSON.stringify(toolData)),
           },
         });
 
