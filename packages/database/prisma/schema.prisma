@@ -3,128 +3,112 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String   @default("Default User")
-  createdAt DateTime @default(now()) @map("created_at")
-  chats              Chat[]
-  researchSessions   ResearchSession[]
-
-  @@map("users")
+  id               String             @id @default(auto()) @map("_id") @db.ObjectId
+  name             String             @default("Default User")
+  createdAt        DateTime           @default(now())
+  chats            Chat[]
+  researchSessions ResearchSession[]
 }
 
 model Chat {
-  id        String            @id @default(cuid())
-  userId    String            @map("user_id")
-  title     String            @default("New Chat")
-  taskType  String?           @map("task_type")
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  title           String            @default("New Chat")
+  taskType        String?
   status          String            @default("active")
   starred         Boolean           @default(false)
-  analysisModel   String            @default("claude-sonnet-4.6") @map("analysis_model")
-  generationModel String            @default("claude-sonnet-4.6") @map("generation_model")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-  user      User              @relation(fields: [userId], references: [id])
-  messages  Message[]
-  prompts   GeneratedPrompt[]
-
-  @@map("chats")
+  analysisModel   String            @default("claude-sonnet-4.6")
+  generationModel String            @default("claude-sonnet-4.6")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id])
+  messages        Message[]
+  prompts         GeneratedPrompt[]
 }
 
 model Message {
-  id        String            @id @default(cuid())
-  chatId    String            @map("chat_id")
-  role      String
-  content   String            @db.Text
-  metadata  Json?
-  createdAt DateTime          @default(now()) @map("created_at")
-  chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  prompts   GeneratedPrompt[]
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  chatId      String            @db.ObjectId
+  role        String
+  content     String
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  chat        Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  prompts     GeneratedPrompt[]
   attachments Attachment[]
-
-  @@map("messages")
 }
 
 model Attachment {
-  id           String   @id @default(cuid())
-  messageId    String?  @map("message_id")
-  chatId       String   @map("chat_id")
-  fileName     String   @map("file_name")
-  fileType     String   @map("file_type")
-  mimeType     String   @map("mime_type")
-  fileSize     Int      @map("file_size")
-  storagePath  String   @map("storage_path")
-  extractedText String?  @db.LongText @map("extracted_text")
-  createdAt    DateTime @default(now()) @map("created_at")
-  message      Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@map("attachments")
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  messageId     String?  @db.ObjectId
+  chatId        String   @db.ObjectId
+  fileName      String
+  fileType      String
+  mimeType      String
+  fileSize      Int
+  storagePath   String
+  extractedText String?
+  createdAt     DateTime @default(now())
+  message       Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
 model GeneratedPrompt {
-  id          String   @id @default(cuid())
-  chatId      String   @map("chat_id")
-  messageId   String?  @map("message_id")
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatId      String   @db.ObjectId
+  messageId   String?  @db.ObjectId
   variant     String
-  modelTarget String   @map("model_target")
-  content     String   @db.LongText
+  modelTarget String
+  content     String
   score       Float?
-  explanation String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
+  explanation String?
+  createdAt   DateTime @default(now())
   chat        Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
   message     Message? @relation(fields: [messageId], references: [id])
-
-  @@map("generated_prompts")
 }
 
 model ResearchSession {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  title      String    @default("New Research")
-  query      String    @db.Text
-  status        String    @default("pending")
-  starred       Boolean   @default(false)
-  researchModel String    @default("claude-sonnet-4.6") @map("research_model")
-  reportData    Json?     @map("report_data")
-  toolsUsed  Json?     @map("tools_used")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  user       User      @relation(fields: [userId], references: [id])
-  messages   ResearchMessage[]
-  tasks      CrossAppTask[]    @relation("ResearchTasks")
-
-  @@map("research_sessions")
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  title         String            @default("New Research")
+  query         String
+  status        String            @default("pending")
+  starred       Boolean           @default(false)
+  researchModel String            @default("claude-sonnet-4.6")
+  reportData    Json?
+  toolsUsed     Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id])
+  messages      ResearchMessage[]
+  tasks         CrossAppTask[]    @relation("ResearchTasks")
 }
 
 model ResearchMessage {
-  id        String          @id @default(cuid())
-  sessionId String          @map("session_id")
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String          @db.ObjectId
   role      String
-  content   String          @db.LongText
+  content   String
   metadata  Json?
-  createdAt DateTime        @default(now()) @map("created_at")
+  createdAt DateTime        @default(now())
   session   ResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@map("research_messages")
 }
 
 model CrossAppTask {
-  id              String           @id @default(cuid())
-  sourceApp       String           @map("source_app")
-  targetApp       String           @map("target_app")
-  taskType        String           @map("task_type")
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  sourceApp       String
+  targetApp       String
+  taskType        String
   status          String           @default("pending")
   payload         Json
   result          Json?
-  sourceRefId     String?          @map("source_ref_id")
-  targetRefId     String?          @map("target_ref_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  completedAt     DateTime?        @map("completed_at")
+  sourceRefId     String?          @db.ObjectId
+  targetRefId     String?          @db.ObjectId
+  createdAt       DateTime         @default(now())
+  completedAt     DateTime?
   researchSession ResearchSession? @relation("ResearchTasks", fields: [sourceRefId], references: [id])
-
-  @@map("cross_app_tasks")
 }
