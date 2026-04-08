@@ -33,7 +33,7 @@ export function useStrategist(sessionId: string) {
     }
   }, [sessionId]);
 
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, images?: { data: string; mimeType: string }[]) => {
     setSending(true);
     setError(null);
 
@@ -44,7 +44,7 @@ export function useStrategist(sessionId: string) {
       const res = await fetch(`/api/strategist/${sessionId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, images }),
       });
       const data = await res.json();
 

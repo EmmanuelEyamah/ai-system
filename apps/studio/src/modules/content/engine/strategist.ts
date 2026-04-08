@@ -1,6 +1,7 @@
 import { generateText, type LanguageModel } from "ai";
 import { createAnthropicClient, createOpenAIClient } from "@ai-system/ai-clients";
 import { getModel } from "@/lib/models";
+import { quickResearch } from "@/lib/auto-research";
 import { CONTENT_STRATEGIST_PROMPT, CONTENT_GENERATOR_PROMPT, CONTENT_REPURPOSE_PROMPT, CONTENT_FEEDBACK_PROMPT } from "./prompts";
 
 function resolveModel(modelId?: string): LanguageModel {
@@ -66,10 +67,18 @@ export async function generateContent(params: {
   const model = resolveModel(modelId);
 
   const context = conversationHistory.map((m) => `${m.role}: ${m.content}`).join("\n");
+
+  // Auto-research for better content
+  let researchData = "";
+  try {
+    researchData = await quickResearch(briefSummary.slice(0, 100));
+  } catch {}
+
   const userContent = [
     `## Content Brief\n${briefSummary}`,
     `## Conversation Context\n${context}`,
     folderContext ? `## Reference Data (from folders/research)\n${folderContext}` : "",
+    researchData ? `## Auto-Research (live data)\n${researchData}` : "",
   ].filter(Boolean).join("\n\n---\n\n");
 
   const retryGenerate = async (attempt = 1): Promise<string> => {

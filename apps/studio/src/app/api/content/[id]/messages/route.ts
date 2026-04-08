@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@ai-system/database";
 import { handleConversation } from "@/modules/content/engine/strategist";
+import { processMessage } from "@/lib/process-message";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   try {
-    const { message } = await request.json();
+    const { message, images } = await request.json();
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
 
     const session = await db.contentSession.findUnique({
@@ -40,9 +41,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ type: "trigger_generate", briefSummary });
     }
 
+    // Process URLs
+    const { enrichedMessage } = await processMessage(message.trim(), images);
+
     // Conversation
     const result = await handleConversation({
-      userMessage: message.trim(),
+      userMessage: enrichedMessage,
       conversationHistory: history,
     });
 

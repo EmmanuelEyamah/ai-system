@@ -72,7 +72,7 @@ export function useContent(sessionId: string) {
     }
   }, [sessionId]);
 
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, images?: { data: string; mimeType: string }[]) => {
     setState((prev) => ({ ...prev, sending: true, showConfirmButtons: false, error: null }));
 
     const userMsg: ContentMessage = { id: `temp-${Date.now()}`, role: "user", content: message };
@@ -82,7 +82,7 @@ export function useContent(sessionId: string) {
       const res = await fetch(`/api/content/${sessionId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, images }),
       });
       const data = await res.json();
 

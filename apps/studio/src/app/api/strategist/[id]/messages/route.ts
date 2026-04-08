@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@ai-system/database";
 import { chat } from "@/modules/strategist/engine/advisor";
+import { processMessage } from "@/lib/process-message";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   try {
-    const { message } = await request.json();
+    const { message, images } = await request.json();
     if (!message?.trim()) return NextResponse.json({ error: "Message required" }, { status: 400 });
 
     const session = await db.strategistSession.findUnique({
@@ -15,7 +16,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
     if (!session) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Save user message
+    // Process URLs in the message (scrape them)
+    const { enrichedMessage } = await processMessage(message.trim(), images);
+
+    // Save user message (original, not enriched)
     await db.strategistMessage.create({
       data: { sessionId: id, role: "user", content: message.trim() },
     });
@@ -25,10 +29,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       content: m.content,
     }));
 
-    // Get response
+    // Get response with enriched message (includes scraped URL content)
     const response = await chat({
-      userMessage: message.trim(),
+      userMessage: enrichedMessage,
       conversationHistory: history,
+      images,
     });
 
     // Save assistant response

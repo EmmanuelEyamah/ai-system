@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useEffect, useState, useRef } from "react";
+import { use, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Send, PenTool, Zap, PlusCircle, User, Bot, Link2, X, RefreshCw } from "lucide-react";
+import { Loader2, PenTool, Zap, PlusCircle, User, Bot, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ContentCard } from "@/modules/content/components/ContentCard";
-import { ReferenceButton } from "@/components/shared/ReferenceButton";
+import { SmartInput } from "@/components/shared/SmartInput";
+import { ModuleHandoff } from "@/components/shared/ModuleHandoff";
 import { SaveToFolder } from "@/components/shared/SaveToFolder";
 import { useContent } from "@/modules/content/hooks/useContent";
 import { MarkdownRenderer, LoadingDots } from "@ai-system/shared-ui";
@@ -19,30 +20,22 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
     fetchSession, sendMessage, generateContent, repurposePost, sendFeedback, addMore,
   } = useContent(id);
 
-  const [input, setInput] = useState("");
-  const [references, setReferences] = useState<{ title: string; context: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
 
-  const addReference = (context: string, title: string) => {
-    setReferences((prev) => [...prev, { title, context }]);
-  };
-
-  const removeReference = (index: number) => {
-    setReferences((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || sending) return;
-    const refContext = references.map((r) => r.context).join("\n\n---\n\n");
-    const msg = refContext ? `${refContext}\n\n${input.trim()}` : input.trim();
-    setReferences([]);
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    await sendMessage(msg);
+  const handleSend = async (message: string, files?: { file: File }[]) => {
+    let images: { data: string; mimeType: string }[] | undefined;
+    if (files && files.length > 0) {
+      try {
+        const formData = new FormData();
+        files.forEach((f) => formData.append("files", f.file));
+        const res = await fetch("/api/process-files", { method: "POST", body: formData });
+        if (res.ok) { const data = await res.json(); images = data.files; }
+      } catch {}
+    }
+    await sendMessage(message, images);
   };
 
   if (loading) {
@@ -95,6 +88,9 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   <MarkdownRenderer content={msg.role === "user" ? cleanMessageForDisplay(msg.content) : msg.content} />
+                  {msg.role === "assistant" && i === messages.filter((m) => m.content !== "__GENERATE_CONTENT__").length - 1 && !sending && (
+                    <ModuleHandoff context={msg.content} currentModule="content" />
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -185,33 +181,13 @@ export default function ContentPage({ params }: { params: Promise<{ id: string }
         {(status === "conversation" || status === "completed") && (
           <div className="px-4 sm:px-6 py-3 border-t border-white/4 shrink-0">
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white/2 border border-white/5 rounded-xl p-1.5">
-                {references.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2 pb-1">
-                    {references.map((ref, i) => (
-                      <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
-                        <Link2 size={10} />
-                        <span className="truncate max-w-36">{ref.title}</span>
-                        <button onClick={() => removeReference(i)} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-end gap-2">
-                  <ReferenceButton onReference={(context, t) => addReference(context, t)} />
-                  <textarea ref={textareaRef} value={input}
-                    onChange={(e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={messages.length === 0 ? "What content do you need? (use 🔗 to reference past work)" : status === "completed" ? "Give feedback or ask for changes..." : "Add more context..."}
-                    rows={1} disabled={sending || showConfirmButtons || generating}
-                    className="flex-1 px-3 py-2.5 bg-transparent text-[13px] text-zinc-200 placeholder:text-zinc-600 focus:outline-none resize-none disabled:opacity-50" />
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={handleSend} disabled={!input.trim() || sending || showConfirmButtons || generating}
-                    className="p-2.5 rounded-lg bg-rose-500 hover:bg-rose-400 disabled:bg-white/5 disabled:text-zinc-600 text-white transition-all shrink-0 mb-0.5">
-                    {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                  </motion.button>
-                </div>
-              </div>
+              <SmartInput
+                onSend={(msg, files) => handleSend(msg, files)}
+                disabled={showConfirmButtons || generating}
+                sending={sending}
+                placeholder={messages.length === 0 ? "What content do you need? (paste URLs or drop images)" : "Give feedback or ask for changes..."}
+                accentColor="bg-rose-500 hover:bg-rose-400"
+              />
             </div>
           </div>
         )}

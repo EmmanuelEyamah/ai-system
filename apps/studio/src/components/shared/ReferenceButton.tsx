@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link2, MessageSquare, Search, Lightbulb, TrendingUp, Folder, Loader2, X } from "lucide-react";
+import { Link2, MessageSquare, Search, Lightbulb, TrendingUp, Folder, Loader2, X, PenTool, Target } from "lucide-react";
 import { cn } from "@ai-system/shared-ui";
 
 interface RefItem {
@@ -24,6 +24,8 @@ const typeConfig: Record<string, { icon: typeof MessageSquare; color: string; la
   research: { icon: Search, color: "text-cyan-400", label: "Research" },
   critic: { icon: Lightbulb, color: "text-amber-400", label: "Critique" },
   trends: { icon: TrendingUp, color: "text-orange-400", label: "Trends" },
+  content: { icon: PenTool, color: "text-rose-400", label: "Content" },
+  strategist: { icon: Target, color: "text-indigo-400", label: "Strategist" },
 };
 
 const COLORS: Record<string, string> = {
