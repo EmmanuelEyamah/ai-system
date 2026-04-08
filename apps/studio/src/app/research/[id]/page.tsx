@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Star, AlertCircle, Search, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { SaveToFolder } from "@/components/shared/SaveToFolder";
 import { AgentActivityFeed } from "@/modules/research/components/AgentActivityFeed";
 import { ReportRenderer } from "@/modules/research/components/ReportRenderer";
 import { FollowUpChat } from "@/modules/research/components/FollowUpChat";
@@ -87,13 +88,16 @@ export default function ResearchPage({
                 {currentStatus.label}
               </span>
             </div>
-            <button
-              className={`p-1.5 rounded-md hover:bg-white/5 transition-colors shrink-0 ${
-                starred ? "text-amber-400" : "text-zinc-600 hover:text-amber-400"
-              }`}
-            >
-              <Star size={14} fill={starred ? "currentColor" : "none"} />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <SaveToFolder itemType="research" itemId={id} itemTitle={title || query?.slice(0, 60) || ""} />
+              <button
+                className={`p-1.5 rounded-md hover:bg-white/5 transition-colors ${
+                  starred ? "text-amber-400" : "text-zinc-600 hover:text-amber-400"
+                }`}
+              >
+                <Star size={14} fill={starred ? "currentColor" : "none"} />
+              </button>
+            </div>
           </div>
           <h1 className="text-[13px] sm:text-[14px] text-zinc-300 truncate font-medium mt-1">
             {title || query?.slice(0, 80)}

@@ -6,7 +6,9 @@ import { Loader2, Send, Lightbulb, Zap, PlusCircle, User, Bot, Link2, X, Refresh
 import { AppShell } from "@/components/layout/AppShell";
 import { VerdictDisplay } from "@/modules/critic/components/VerdictDisplay";
 import { ReferenceButton } from "@/components/shared/ReferenceButton";
+import { SaveToFolder } from "@/components/shared/SaveToFolder";
 import { useCritic } from "@/modules/critic/hooks/useCritic";
+import { cleanMessageForDisplay } from "@/lib/display-utils";
 import { MarkdownRenderer, LoadingDots } from "@ai-system/shared-ui";
 
 export default function CriticPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +20,7 @@ export default function CriticPage({ params }: { params: Promise<{ id: string }>
   } = useCritic(id);
 
   const [input, setInput] = useState("");
-  const [reference, setReference] = useState<{ title: string; context: string } | null>(null);
+  const [references, setReferences] = useState<{ title: string; context: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -28,13 +30,19 @@ export default function CriticPage({ params }: { params: Promise<{ id: string }>
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, events]);
 
+  const addReference = (context: string, title: string) => {
+    setReferences((prev) => [...prev, { title, context }]);
+  };
+
+  const removeReference = (index: number) => {
+    setReferences((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSend = async () => {
     if (!input.trim() || sending) return;
-    // Prepend reference context if attached
-    const msg = reference
-      ? `${reference.context}\n\n${input.trim()}`
-      : input.trim();
-    setReference(null);
+    const refContext = references.map((r) => r.context).join("\n\n---\n\n");
+    const msg = refContext ? `${refContext}\n\n${input.trim()}` : input.trim();
+    setReferences([]);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     await sendMessage(msg);
@@ -59,13 +67,16 @@ export default function CriticPage({ params }: { params: Promise<{ id: string }>
           animate={{ opacity: 1, y: 0 }}
           className="border-b border-white/4 pl-14 pr-4 md:px-6 py-3 shrink-0"
         >
-          <div className="flex items-center gap-2">
-            <Lightbulb size={14} className="text-amber-400" />
-            <span className="text-[12px] font-medium text-amber-400">Idea Critic</span>
-            <span className="text-zinc-700">|</span>
-            <span className="text-[12px] text-zinc-500">
-              {status === "conversation" ? "Tell me your idea..." : status === "researching" ? "Researching..." : status === "completed" ? "Verdict ready" : ""}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lightbulb size={14} className="text-amber-400" />
+              <span className="text-[12px] font-medium text-amber-400">Idea Critic</span>
+              <span className="text-zinc-700">|</span>
+              <span className="text-[12px] text-zinc-500">
+                {status === "conversation" ? "Tell me your idea..." : status === "researching" ? "Researching..." : status === "completed" ? "Verdict ready" : ""}
+              </span>
+            </div>
+            <SaveToFolder itemType="critic" itemId={id} itemTitle={messages[0]?.content?.slice(0, 60) || "Idea"} />
           </div>
         </motion.header>
 
@@ -104,7 +115,7 @@ export default function CriticPage({ params }: { params: Promise<{ id: string }>
                   {msg.role === "user" ? <User size={13} className="text-zinc-400" /> : <Bot size={13} className="text-amber-400" />}
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
-                  <MarkdownRenderer content={msg.content} />
+                  <MarkdownRenderer content={msg.role === "user" ? cleanMessageForDisplay(msg.content) : msg.content} />
                 </div>
               </motion.div>
             ))}
@@ -220,20 +231,20 @@ export default function CriticPage({ params }: { params: Promise<{ id: string }>
           <div className="px-4 sm:px-6 py-3 border-t border-white/4 shrink-0">
             <div className="max-w-2xl mx-auto">
               <div className="bg-white/2 border border-white/5 rounded-xl p-1.5">
-                {reference && (
-                  <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
-                      <Link2 size={10} />
-                      <span className="truncate max-w-48">{reference.title}</span>
-                      <button onClick={() => setReference(null)} className="hover:text-violet-300 ml-0.5">
-                        <X size={10} />
-                      </button>
-                    </div>
+                {references.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2 pb-1">
+                    {references.map((ref, i) => (
+                      <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
+                        <Link2 size={10} />
+                        <span className="truncate max-w-36">{ref.title}</span>
+                        <button onClick={() => removeReference(i)} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div className="flex items-end gap-2">
                   <ReferenceButton
-                    onReference={(context, title) => setReference({ title, context })}
+                    onReference={(context, title) => addReference(context, title)}
                   />
                   <textarea
                     ref={textareaRef}

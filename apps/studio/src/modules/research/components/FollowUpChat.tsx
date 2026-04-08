@@ -23,7 +23,7 @@ export function FollowUpChat({
   onSendMessage: (message: string) => void;
 }) {
   const [input, setInput] = useState("");
-  const [reference, setReference] = useState<{ title: string; context: string } | null>(null);
+  const [references, setReferences] = useState<{ title: string; context: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -35,8 +35,9 @@ export function FollowUpChat({
 
   const handleSubmit = () => {
     if (!input.trim() || sending) return;
-    const msg = reference ? `${reference.context}\n\n${input.trim()}` : input.trim();
-    setReference(null);
+    const refContext = references.map((r) => r.context).join("\n\n---\n\n");
+    const msg = refContext ? `${refContext}\n\n${input.trim()}` : input.trim();
+    setReferences([]);
     onSendMessage(msg);
     setInput("");
     if (textareaRef.current) {
@@ -94,17 +95,19 @@ export function FollowUpChat({
 
       {/* Input */}
       <div className="bg-white/2 border border-white/5 rounded-xl p-1.5">
-        {reference && (
-          <div className="flex items-center gap-2 px-3 pt-2 pb-1">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
-              <Link2 size={10} />
-              <span className="truncate max-w-48">{reference.title}</span>
-              <button onClick={() => setReference(null)} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
-            </div>
+        {references.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2 pb-1">
+            {references.map((ref, i) => (
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/15 text-[11px] text-violet-400">
+                <Link2 size={10} />
+                <span className="truncate max-w-36">{ref.title}</span>
+                <button onClick={() => setReferences((p) => p.filter((_, j) => j !== i))} className="hover:text-violet-300 ml-0.5"><X size={10} /></button>
+              </div>
+            ))}
           </div>
         )}
         <div className="flex items-end gap-2">
-          <ReferenceButton onReference={(context, title) => setReference({ title, context })} />
+          <ReferenceButton onReference={(context, title) => setReferences((p) => [...p, { title, context }])} />
           <textarea
             ref={textareaRef}
             value={input}

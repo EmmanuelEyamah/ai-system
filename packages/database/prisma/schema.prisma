@@ -14,6 +14,10 @@ model User {
   chats            Chat[]
   researchSessions ResearchSession[]
   ideaCritiques    IdeaCritique[]
+  trendSessions    TrendSession[]
+  folders          Folder[]
+  contentSessions     ContentSession[]
+  strategistSessions  StrategistSession[]
 }
 
 model Chat {
@@ -122,6 +126,94 @@ model CriticMessage {
   metadata    Json?
   createdAt   DateTime      @default(now())
   critique    IdeaCritique  @relation(fields: [critiqueId], references: [id], onDelete: Cascade)
+}
+
+model TrendSession {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  title         String   @default("New Trend Search")
+  query         String
+  searchMode    String   @default("topic")
+  platforms     String[]
+  timeframe     String   @default("week")
+  starred       Boolean  @default(false)
+  trendResults  Json?
+  analysis      Json?
+  ideas         Json?
+  calendar      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model ContentSession {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String           @db.ObjectId
+  title         String           @default("New Content")
+  status        String           @default("conversation")
+  starred       Boolean          @default(false)
+  platforms     String[]
+  goal          String?
+  briefSummary  String?
+  contentData   Json?
+  calendarData  Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation(fields: [userId], references: [id])
+  messages      ContentMessage[]
+}
+
+model ContentMessage {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId   String         @db.ObjectId
+  role        String
+  content     String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  session     ContentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model StrategistSession {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String              @db.ObjectId
+  title     String              @default("New Strategy Session")
+  starred   Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation(fields: [userId], references: [id])
+  messages  StrategistMessage[]
+}
+
+model StrategistMessage {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String            @db.ObjectId
+  role      String
+  content   String
+  metadata  Json?
+  createdAt DateTime          @default(now())
+  session   StrategistSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Folder {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String       @db.ObjectId
+  name        String
+  description String?
+  color       String       @default("violet")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id])
+  items       FolderItem[]
+}
+
+model FolderItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  folderId   String   @db.ObjectId
+  itemType   String
+  itemId     String
+  itemTitle  String
+  createdAt  DateTime @default(now())
+  folder     Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
 }
 
 model CrossAppTask {

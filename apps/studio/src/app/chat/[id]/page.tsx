@@ -8,6 +8,7 @@ import { ChatInput } from "@/modules/chat/components/ChatInput";
 import { PromptPanel } from "@/modules/chat/prompts/PromptPanel";
 import { ModelSelector } from "@/modules/chat/components/ModelSelector";
 import { useChat } from "@/modules/chat/hooks/useChat";
+import { SaveToFolder } from "@/components/shared/SaveToFolder";
 import { Layers, X, Sparkles, PlusCircle } from "lucide-react";
 
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +37,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
               <span className="text-[13px] text-zinc-500">{sending ? "Thinking..." : "Ready"}</span>
             </div>
             <div className="flex items-center gap-2">
+              <SaveToFolder itemType="chat" itemId={id} itemTitle={messages[0]?.content?.slice(0, 60) || "Chat"} />
               <div className="hidden sm:block">
                 <ModelSelector selection={models} onChange={updateModels} />
               </div>

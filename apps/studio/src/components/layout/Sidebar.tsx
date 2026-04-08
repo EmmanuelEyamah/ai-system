@@ -5,11 +5,14 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, MessageSquare, Search, Trash2, PanelLeftClose, PanelLeft,
-  Layers, X, Star, LogOut, ChevronDown, Lightbulb,
+  Layers, X, Star, LogOut, ChevronDown, Lightbulb, TrendingUp, Folder, PenTool, Target,
 } from "lucide-react";
 import { useChats } from "@/modules/chat/hooks/useChats";
 import { useResearchSessions } from "@/modules/research/hooks/useResearchSessions";
 import { useCritiques } from "@/modules/critic/hooks/useCritiques";
+import { useTrendSessions } from "@/modules/trends/hooks/useTrendSessions";
+import { useContentSessions } from "@/modules/content/hooks/useContentSessions";
+import { useStrategistSessions } from "@/modules/strategist/hooks/useStrategistSessions";
 import { cn } from "@ai-system/shared-ui";
 
 function ItemRow({
@@ -106,7 +109,7 @@ function AccordionSection({
   );
 }
 
-function NewDropdown({ onNewChat, onNewResearch, onNewCritique }: { onNewChat: () => void; onNewResearch: () => void; onNewCritique: () => void }) {
+function NewDropdown({ onNewChat, onNewResearch, onNewCritique, onNewTrend, onNewContent, onNewStrategist }: { onNewChat: () => void; onNewResearch: () => void; onNewCritique: () => void; onNewTrend: () => void; onNewContent: () => void; onNewStrategist: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -171,6 +174,39 @@ function NewDropdown({ onNewChat, onNewResearch, onNewCritique }: { onNewChat: (
                 <p className="text-[10px] text-zinc-600">Get honest feedback</p>
               </div>
             </button>
+            <div className="h-px bg-white/4 mx-3" />
+            <button
+              onClick={() => { onNewTrend(); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-white/3 transition-smooth"
+            >
+              <TrendingUp size={13} className="text-orange-400" />
+              <div>
+                <p className="text-[12px] text-zinc-200 font-medium">New Trend Search</p>
+                <p className="text-[10px] text-zinc-600">Find trending content</p>
+              </div>
+            </button>
+            <div className="h-px bg-white/4 mx-3" />
+            <button
+              onClick={() => { onNewContent(); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-white/3 transition-smooth"
+            >
+              <PenTool size={13} className="text-rose-400" />
+              <div>
+                <p className="text-[12px] text-zinc-200 font-medium">New Content</p>
+                <p className="text-[10px] text-zinc-600">Create platform content</p>
+              </div>
+            </button>
+            <div className="h-px bg-white/4 mx-3" />
+            <button
+              onClick={() => { onNewStrategist(); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-white/3 transition-smooth"
+            >
+              <Target size={13} className="text-indigo-400" />
+              <div>
+                <p className="text-[12px] text-zinc-200 font-medium">New Strategy Session</p>
+                <p className="text-[10px] text-zinc-600">Talk to your $500/hr advisor</p>
+              </div>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -184,10 +220,13 @@ export function Sidebar() {
   const { starredChats, recentChats, loading: chatsLoading, createChat, deleteChat, toggleStar: toggleChatStar } = useChats();
   const { starredSessions, recentSessions, loading: researchLoading, createSession, deleteSession, toggleStar: toggleResearchStar } = useResearchSessions();
   const { critiques, loading: criticsLoading, createCritique, deleteCritique, toggleStar: toggleCriticStar } = useCritiques();
+  const { sessions: trendSessions, loading: trendsLoading, deleteSession: deleteTrend, toggleStar: toggleTrendStar } = useTrendSessions();
+  const { sessions: contentSessions, loading: contentLoading, createSession: createContent, deleteSession: deleteContent, toggleStar: toggleContentStar } = useContentSessions();
+  const { sessions: strategistSessions, loading: strategistLoading, createSession: createStrategist, deleteSession: deleteStrategist, toggleStar: toggleStrategistStar } = useStrategistSessions();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const loading = chatsLoading || researchLoading || criticsLoading;
+  const loading = chatsLoading || researchLoading || criticsLoading || trendsLoading || contentLoading || strategistLoading;
   const allChats = [...starredChats, ...recentChats];
   const allResearch = [...starredSessions, ...recentSessions];
 
@@ -206,6 +245,21 @@ export function Sidebar() {
     if (critiqueId) { router.push(`/critic/${critiqueId}`); setMobileOpen(false); }
   };
 
+  const handleNewTrend = () => {
+    router.push("/trends/new");
+    setMobileOpen(false);
+  };
+
+  const handleNewContent = async () => {
+    const sessionId = await createContent();
+    if (sessionId) { router.push(`/content/${sessionId}`); setMobileOpen(false); }
+  };
+
+  const handleNewStrategist = async () => {
+    const sessionId = await createStrategist();
+    if (sessionId) { router.push(`/strategist/${sessionId}`); setMobileOpen(false); }
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth", { method: "DELETE" });
     router.push("/login");
@@ -215,6 +269,9 @@ export function Sidebar() {
   const currentChatId = pathname?.startsWith("/chat/") ? pathname.split("/chat/")[1] : null;
   const currentResearchId = pathname?.startsWith("/research/") ? pathname.split("/research/")[1] : null;
   const currentCriticId = pathname?.startsWith("/critic/") ? pathname.split("/critic/")[1] : null;
+  const currentTrendId = pathname?.startsWith("/trends/") ? pathname.split("/trends/")[1] : null;
+  const currentContentId = pathname?.startsWith("/content/") ? pathname.split("/content/")[1] : null;
+  const currentStrategistId = pathname?.startsWith("/strategist/") ? pathname.split("/strategist/")[1] : null;
 
   const sidebarContent = (
     <div className="flex flex-col h-full w-full overflow-hidden">
@@ -238,7 +295,7 @@ export function Sidebar() {
 
       {/* New button with dropdown */}
       <div className="px-3 mb-3 shrink-0">
-        <NewDropdown onNewChat={handleNewChat} onNewResearch={handleNewResearch} onNewCritique={handleNewCritique} />
+        <NewDropdown onNewChat={handleNewChat} onNewResearch={handleNewResearch} onNewCritique={handleNewCritique} onNewTrend={handleNewTrend} onNewContent={handleNewContent} onNewStrategist={handleNewStrategist} />
       </div>
 
       {/* Scrollable sections */}
@@ -305,12 +362,73 @@ export function Sidebar() {
                 </AnimatePresence>
               )}
             </AccordionSection>
+
+            <AccordionSection label="Trends" icon={TrendingUp} iconColor="text-orange-400/60" count={trendSessions.length} defaultOpen={true}>
+              {trendSessions.length === 0 ? (
+                <p className="text-[11px] text-zinc-700 px-3 py-2">No trend searches yet</p>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {trendSessions.map((session, i) => (
+                    <motion.div key={session.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.02 }}>
+                      <ItemRow icon={TrendingUp} iconColor="text-zinc-700" activeColor="text-orange-400"
+                        title={session.title} isActive={currentTrendId === session.id} starred={session.starred}
+                        onNavigate={() => { router.push(`/trends/${session.id}`); setMobileOpen(false); }}
+                        onDelete={(e) => { e.stopPropagation(); deleteTrend(session.id); }}
+                        onToggleStar={(e) => { e.stopPropagation(); toggleTrendStar(session.id); }}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </AccordionSection>
+
+            <AccordionSection label="Content Studio" icon={PenTool} iconColor="text-rose-400/60" count={contentSessions.length} defaultOpen={true}>
+              {contentSessions.length === 0 ? (
+                <p className="text-[11px] text-zinc-700 px-3 py-2">No content yet</p>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {contentSessions.map((session, i) => (
+                    <motion.div key={session.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.02 }}>
+                      <ItemRow icon={PenTool} iconColor="text-zinc-700" activeColor="text-rose-400"
+                        title={session.title} isActive={currentContentId === session.id} starred={session.starred}
+                        onNavigate={() => { router.push(`/content/${session.id}`); setMobileOpen(false); }}
+                        onDelete={(e) => { e.stopPropagation(); deleteContent(session.id); }}
+                        onToggleStar={(e) => { e.stopPropagation(); toggleContentStar(session.id); }}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </AccordionSection>
+
+            <AccordionSection label="Strategist" icon={Target} iconColor="text-indigo-400/60" count={strategistSessions.length} defaultOpen={true}>
+              {strategistSessions.length === 0 ? (
+                <p className="text-[11px] text-zinc-700 px-3 py-2">No sessions yet</p>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {strategistSessions.map((session, i) => (
+                    <motion.div key={session.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.02 }}>
+                      <ItemRow icon={Target} iconColor="text-zinc-700" activeColor="text-indigo-400"
+                        title={session.title} isActive={currentStrategistId === session.id} starred={session.starred}
+                        onNavigate={() => { router.push(`/strategist/${session.id}`); setMobileOpen(false); }}
+                        onDelete={(e) => { e.stopPropagation(); deleteStrategist(session.id); }}
+                        onToggleStar={(e) => { e.stopPropagation(); toggleStrategistStar(session.id); }}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </AccordionSection>
           </>
         )}
       </div>
 
-      {/* Logout */}
-      <div className="px-3 py-3 border-t border-white/4 shrink-0">
+      {/* Bottom actions */}
+      <div className="px-3 py-3 border-t border-white/4 shrink-0 space-y-1">
+        <button onClick={() => { router.push("/folders"); setMobileOpen(false); }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] text-violet-400/70 hover:text-violet-400 hover:bg-violet-500/5 transition-smooth">
+          <Folder size={14} /> View All Folders
+        </button>
         <button onClick={handleLogout}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] text-zinc-600 hover:text-zinc-400 hover:bg-white/3 transition-smooth">
           <LogOut size={14} /> Sign Out
