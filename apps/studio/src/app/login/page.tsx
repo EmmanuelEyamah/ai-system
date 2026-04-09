@@ -57,7 +57,7 @@ export default function LoginPage() {
           >
             <Layers size={24} className="text-violet-400" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-white mb-1">Studio</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Manny AI Studio</h1>
           <p className="text-sm text-zinc-500">Sign in to continue</p>
         </div>
 

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, MessageSquare, Search, Trash2, PanelLeftClose, PanelLeft,
   Layers, X, Star, LogOut, ChevronDown, Lightbulb, TrendingUp,
-  Folder, PenTool, Target, Heart,
+  Folder, PenTool, Target, Heart, ChevronsDownUp,
 } from "lucide-react";
 import { useStudio } from "@/providers/StudioProvider";
 import { cn } from "@ai-system/shared-ui";
@@ -55,10 +55,15 @@ function ItemRow({ icon: Icon, iconColor, activeColor, title, isActive, starred,
   );
 }
 
-function AccordionSection({ label, icon: Icon, iconColor, count, defaultOpen, children }: {
-  label: string; icon: typeof MessageSquare; iconColor: string; count: number; defaultOpen?: boolean; children: React.ReactNode;
+function AccordionSection({ label, icon: Icon, iconColor, count, defaultOpen, collapseSignal, children }: {
+  label: string; icon: typeof MessageSquare; iconColor: string; count: number; defaultOpen?: boolean; collapseSignal: number; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? true);
+
+  // Collapse when signal changes (except on mount)
+  useEffect(() => {
+    if (collapseSignal > 0) setOpen(false);
+  }, [collapseSignal]);
   return (
     <div className="mb-1">
       <button onClick={() => setOpen(!open)}
@@ -97,6 +102,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
+  const [collapseSignal, setCollapseSignal] = useState(0);
   const newRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -155,16 +161,22 @@ export function Sidebar() {
           <div className="w-7 h-7 rounded-md bg-violet-500/10 border border-violet-500/15 flex items-center justify-center">
             <Layers size={13} className="text-violet-400" />
           </div>
-          <span className="text-[13px] font-semibold text-zinc-300 tracking-tight">Studio</span>
+          <span className="text-[13px] font-semibold text-zinc-300 tracking-tight">Manny AI Studio</span>
         </div>
-        <button onClick={() => { setCollapsed(true); setMobileOpen(false); }}
-          className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-400 transition-smooth hidden md:block">
-          <PanelLeftClose size={16} />
-        </button>
-        <button onClick={() => setMobileOpen(false)}
-          className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-400 transition-smooth md:hidden">
-          <X size={16} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button onClick={() => setCollapseSignal((s) => s + 1)} title="Collapse all sections"
+            className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-400 transition-smooth">
+            <ChevronsDownUp size={14} />
+          </button>
+          <button onClick={() => { setCollapsed(true); setMobileOpen(false); }}
+            className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-400 transition-smooth hidden md:block">
+            <PanelLeftClose size={16} />
+          </button>
+          <button onClick={() => setMobileOpen(false)}
+            className="p-1.5 rounded-md hover:bg-white/5 text-zinc-600 hover:text-zinc-400 transition-smooth md:hidden">
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="px-3 mb-3 shrink-0" ref={newRef}>
@@ -214,7 +226,8 @@ export function Sidebar() {
 
             return (
               <AccordionSection key={moduleKey} label={config.label} icon={Icon}
-                iconColor={config.iconColor} count={items.length} defaultOpen={items.length > 0}>
+                iconColor={config.iconColor} count={items.length} defaultOpen={items.length > 0}
+                collapseSignal={collapseSignal}>
                 {items.length === 0 ? (
                   <p className="text-[11px] text-zinc-700 px-3 py-2">No sessions yet</p>
                 ) : (

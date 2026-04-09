@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Studio",
+  title: "Manny AI Studio",
   description: "AI-powered prompt engineering and research platform",
 };
 
