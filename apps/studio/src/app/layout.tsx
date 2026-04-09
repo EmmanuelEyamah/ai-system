@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { StudioProvider } from "@/providers/StudioProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
       <body suppressHydrationWarning className="h-full bg-[#050507] text-zinc-100 font-sans overflow-hidden">
-        {children}
+        <StudioProvider>
+          {children}
+        </StudioProvider>
       </body>
     </html>
   );
