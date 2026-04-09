@@ -119,6 +119,7 @@ export function Sidebar() {
   const handleNew = async (moduleKey: ModuleKey) => {
     setNewOpen(false);
     if (moduleKey === "trends") { router.push("/trends/new"); setMobileOpen(false); return; }
+    if (moduleKey === "research") { router.push("/research/new"); setMobileOpen(false); return; }
     const config = MODULE_CONFIG[moduleKey];
     try {
       const res = await fetch(config.apiPath, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });

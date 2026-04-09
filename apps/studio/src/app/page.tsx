@@ -6,6 +6,7 @@ import {
   Layers, MessageSquare, Search, Lightbulb, TrendingUp,
   PenTool, Target, Heart, ArrowRight,
 } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
 import { useStudio } from "@/providers/StudioProvider";
 
 const container = {
@@ -20,7 +21,7 @@ const item = {
 
 const modules = [
   { key: "chats", label: "Prompt Studio", desc: "Craft perfect prompts with a world-class prompt engineer", icon: MessageSquare, color: "emerald", route: "/chat", apiPath: "/api/chat" },
-  { key: "research", label: "Research Hub", desc: "Deep research powered by multiple tools and AI synthesis", icon: Search, color: "cyan", route: "/research", apiPath: "/api/research" },
+  { key: "research", label: "Research Hub", desc: "Deep research powered by multiple tools and AI synthesis", icon: Search, color: "cyan", route: "/research/new", apiPath: null },
   { key: "critiques", label: "Idea Critic", desc: "Get brutally honest feedback from a YC-level advisor", icon: Lightbulb, color: "amber", route: "/critic", apiPath: "/api/critic" },
   { key: "trends", label: "Trends", desc: "Find trending content across all platforms in real-time", icon: TrendingUp, color: "orange", route: "/trends/new", apiPath: null },
   { key: "content", label: "Content Studio", desc: "Create platform-specific content with a $500/hr creative director", icon: PenTool, color: "rose", route: "/content", apiPath: "/api/content" },
@@ -43,7 +44,8 @@ export default function Home() {
   const { data } = useStudio();
 
   const handleStart = async (mod: typeof modules[0]) => {
-    if (!mod.apiPath) { router.push(mod.route); return; }
+    // Modules that need input first — redirect to their input page
+    if (!mod.apiPath || mod.key === "trends" || mod.key === "research") { router.push(mod.route); return; }
     try {
       const res = await fetch(mod.apiPath, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
       if (res.ok) {
@@ -58,10 +60,11 @@ export default function Home() {
   const totalSessions = Object.values(data).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
-    <div className="h-full flex flex-col relative bg-grid noise">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-150 h-100 bg-violet-500/5 rounded-full blur-[120px] pointer-events-none" />
+    <AppShell>
+      <div className="flex-1 flex flex-col relative bg-grid noise overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-150 h-100 bg-violet-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="flex-1 overflow-y-auto relative z-10">
+        <div className="flex-1 overflow-y-auto relative z-10">
         <motion.div variants={container} initial="hidden" animate="show"
           className="max-w-4xl mx-auto px-6 pt-16 sm:pt-24 pb-12">
 
@@ -122,7 +125,8 @@ export default function Home() {
             </p>
           </motion.div>
         </motion.div>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
